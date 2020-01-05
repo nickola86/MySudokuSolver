@@ -13,10 +13,40 @@ export class Sudoku implements OnInit {
   listHistory = [];
 
   cellChange(cell) {
+    console.log("Current Matrix: ", this.matrix);
     this.matrixHistory.push(JSON.parse(JSON.stringify(this.matrix)));
     this.listHistory.push(JSON.parse(JSON.stringify(this.list)));
+    this.updateNumbers(cell);
+  }
+
+  updateNumbers(cell) {
+    this.removeValueFromRow(cell);
+    this.removeValueFromCol(cell);
+    this.removeValueFromBlock(cell);
     cell.numbers = [];
   }
+
+  removeValueFromRow(cell) {
+    console.log("cell", cell);
+    console.log("cell.value", cell.value);
+    console.log("cell.r", cell.r);
+    console.log("cell.c", cell.c);
+    let v = cell.value;
+    let r = cell.r - 1;
+    for (let c = 0; c < 9; c++) {
+      let numbers = this.matrix[r][c].numbers;
+      numbers = numbers.splice(numbers.indexOf(v), 1);
+    }
+  }
+  removeValueFromCol(cell) {
+    let v = cell.value;
+    let c = cell.c - 1;
+    for (let r = 0; r < 9; r++) {
+      let numbers = this.matrix[r][c].numbers;
+      numbers.splice(numbers.indexOf(v), 1);
+    }
+  }
+  removeValueFromBlock(cell) {}
 
   undo() {
     var m = this.matrixHistory.pop();
@@ -27,8 +57,6 @@ export class Sudoku implements OnInit {
 
   ngOnInit() {
     this.initEmptyMatrix();
-    console.log(this.matrix);
-    console.log(this.list);
   }
 
   initEmptyMatrix() {
