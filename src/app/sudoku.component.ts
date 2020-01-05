@@ -12,6 +12,7 @@ export class Sudoku implements OnInit {
   matrix = [];
   matrixHistory = [];
   solved=false;
+  importData = "";
 
   constructor(zone: NgZone){}
 
@@ -27,6 +28,8 @@ export class Sudoku implements OnInit {
     let list = this.matrixToList();
     list = list.filter(e=>!!e.value).map(e=>e.value);
     let checkSum = list && list.length > 0 ? list.reduce((a,b)=>a+b) : 0;
+
+    this.checkEmpty();
 
     this.checkRows();
     this.checkCols();
@@ -55,7 +58,7 @@ export class Sudoku implements OnInit {
         });
         if(options.autoSolve) this.solve();
       }else{
-        list = list.filter(e=> e.numbers.length>0);
+        list = list.filter(e=> e.numbers.length> 0 );
         list = list.sort( (a,b) => a.numbers.length - b.numbers.length);
         list.forEach(e => {
           e.numbers.forEach(n => {
@@ -91,11 +94,26 @@ export class Sudoku implements OnInit {
             }
             
             if(!exist){
-              e.value=n;
-              this.cellChange(e);
-              if(options.autoSolve) this.solve();
-              //Condizione di stop del ForEach
-              throw {};
+              let lista = this.matrixToList();
+              //Seleziono eventuali celle della stessa riga con gli stessi numbers residui
+              let sublistRow = lista.filter(_e=> _e.r===e.r && this.isEqual(_e.numbers,e.numbers));
+              let emptyInRow = lista.filter(_e=> _e.r===e.r && !_e.value);
+              //Seleziono eventuali elementi della stessa colonna con gli stessi numbers residui
+              let sublistCol = lista.filter(_e=>_e.c===e.c && this.isEqual(_e.numbers,e.numbers));
+              let emptyInCol = lista.filter(_e=> _e.c===e.c && !_e.value);
+              //Se ci sono:
+              if(sublistRow.length>1 && sublistRow.length === emptyInRow.length || sublistCol.length>1 && sublistCol.length === emptyInCol.length){
+                //Scrematura necessaria!
+                this.pruning();
+                //this.solve();
+              }
+              else{
+                //e.value=n;
+                //this.cellChange(e);
+                if(options.autoSolve) this.solve();
+                //Condizione di stop del ForEach
+                throw {};
+              }
             }
 
           });
@@ -169,7 +187,13 @@ export class Sudoku implements OnInit {
     if(numbers.indexOf(v)>=0) numbers.splice(numbers.indexOf(v), 1);
   }
 
-  checkRows() {
+  checkEmpty() {
+    let list = this.matrixToList().filter(e=>!e.value && e.numbers.length===0);
+    list.forEach(n=>{
+      n.wrongNumber=true;
+    });
+  }
+  checkRows(){
     let list = this.matrixToList();
     for(let r=1; r<=9; r++){
       let sublist = list.filter(e=>e.r===r && !!e.value);
@@ -202,6 +226,76 @@ export class Sudoku implements OnInit {
         });
       } 
     }
+  }
+
+  pruning(){
+    let pruned=false;
+    let lista = this.matrixToList();
+    lista.filter(e=>e.numbers.length>0).forEach(e=>{
+      //Seleziono eventuali elementi della stessa riga con gli stessi numbers residui
+      let sublistRow = lista.filter(_e=> _e.r===e.r && this.isEqual(_e.numbers,e.numbers));
+      let emptyInRow = lista.filter(_e=> _e.r===e.r && !_e.value);
+      //Seleziono eventuali elementi della stessa colonna con gli stessi numbers residui
+      let sublistCol = lista.filter(_e=>_e.c===e.c && this.isEqual(_e.numbers,e.numbers));
+      let emptyInCol = lista.filter(_e=> _e.c===e.c && !_e.value);
+      //Se ci sono:
+      console.log("sublistRow: ",sublistRow);
+      console.log("sublistCol: ",sublistCol);
+      console.log("e",e);
+      if(sublistRow.length>1 && sublistRow.length === emptyInRow.length){
+        //Posso scartare quei numbers dalle altre celle nel blocco corrente che NON sono sulla riga corrente
+        let minR=Math.floor((e.r-1)/3)*3;
+        let maxR=minR+2;
+        let minC=Math.floor((e.c-1)/3)*3;
+        let maxC=minC+2;
+        console.log("minR",minR);
+        console.log("maxR",maxR);
+        console.log("minC",minC);
+        console.log("maxC",maxC);
+        for(let r=minR;r<=maxR;r++){
+          for(let c=minC;c<=maxC;c++){
+            let numbers = this.matrix[r][c].numbers;
+            console.log("this.matrix["+r+"]["+c+"]",this.matrix[r][c]);
+            if(r != e.r-1 && numbers.length>0 && !this.isEqual(numbers,e.numbers) ){
+              e.numbers.forEach(n=>{
+                if(numbers.indexOf(n)>=0) {
+                  numbers.splice(numbers.indexOf(n), 1);
+                  pruned=true;
+                }
+              });
+            }
+          }
+        }
+      }
+      //Se ci sono:
+      if(sublistCol.length>1 && sublistCol.length === emptyInCol.length){
+        //Posso scartare quei numbers dalle altre celle nel blocco corrente che NON sono sulla colonna corrente
+        let minR=Math.floor((e.r-1)/3)*3;
+        let maxR=minR+2;
+        let minC=Math.floor((e.c-1)/3)*3;
+        let maxC=minC+2;
+        for(let r=minR;r<=maxR;r++){
+          for(let c=minC;c<=maxC;c++){
+            let numbers = this.matrix[r][c].numbers;
+            if(c != e.c-1 && numbers.length>0 && !this.isEqual(numbers,e.numbers) ){
+              e.numbers.forEach(n=>{
+                if(numbers.indexOf(n)>=0){
+                  numbers.splice(numbers.indexOf(n), 1);
+                  pruned=true;
+                }
+              });
+            }
+          }
+        }
+      }
+    });
+    //Se hai potato, prova ancora!
+    if(pruned) this.pruning();
+  }
+
+
+  isEqual(a,b){
+    return JSON.stringify(a)===JSON.stringify(b)
   }
 
   undo() {
@@ -267,6 +361,17 @@ export class Sudoku implements OnInit {
     this.cellChange({r:8,c:8,value:2,fixed:true});
     this.cellChange({r:9,c:1,value:3,fixed:true});
     this.cellChange({r:9,c:2,value:1,fixed:true});
+  }
+
+  import(){
+    this.initEmptyMatrix();
+    var lines = this.importData.split("\n");
+    lines.forEach((line,r)=>{
+      line.split('').forEach((char,c)=>{
+        let v = +char;
+        this.cellChange({r:r+1,c:c+1,value:v,fixed:true});
+      });
+    })
   }
   mockSchema2(){
     let mockString = '[{"r":1,"c":1,"numbers":[2,4]},{"r":1,"c":2,"value":6,"numbers":[],"fixed":true},{"r":1,"c":3,"numbers":[2,7]},{"r":1,"c":4,"value":3,"numbers":[],"fixed":true},{"r":1,"c":5,"numbers":[],"value":9},{"r":1,"c":6,"numbers":[4,5]},{"r":1,"c":7,"value":8,"numbers":[],"fixed":true},{"r":1,"c":8,"numbers":[4,5,7]},{"r":1,"c":9,"value":1,"numbers":[],"fixed":true},{"r":2,"c":1,"numbers":[],"value":1},{"r":2,"c":2,"numbers":[],"value":9},{"r":2,"c":3,"numbers":[],"value":8},{"r":2,"c":4,"numbers":[4,5]},{"r":2,"c":5,"value":7,"numbers":[],"fixed":true},{"r":2,"c":6,"value":2,"numbers":[],"fixed":true},{"r":2,"c":7,"value":3,"numbers":[],"fixed":true},{"r":2,"c":8,"numbers":[4,5,6]},{"r":2,"c":9,"numbers":[4,6]},{"r":3,"c":1,"numbers":[3,4]},{"r":3,"c":2,"value":5,"numbers":[],"fixed":true},{"r":3,"c":3,"numbers":[3,7]},{"r":3,"c":4,"value":8,"numbers":[],"fixed":true},{"r":3,"c":5,"value":1,"numbers":[],"fixed":true},{"r":3,"c":6,"numbers":[],"value":6},{"r":3,"c":7,"numbers":[],"value":2},{"r":3,"c":8,"numbers":[4,7]},{"r":3,"c":9,"value":9,"numbers":[],"fixed":true},{"r":4,"c":1,"numbers":[2,3]},{"r":4,"c":2,"value":8,"numbers":[],"fixed":true},{"r":4,"c":3,"numbers":[2,3]},{"r":4,"c":4,"value":9,"numbers":[],"fixed":true},{"r":4,"c":5,"value":5,"numbers":[],"fixed":true},{"r":4,"c":6,"numbers":[],"value":7},{"r":4,"c":7,"numbers":[4,6]},{"r":4,"c":8,"numbers":[],"value":1},{"r":4,"c":9,"numbers":[4,6]},{"r":5,"c":1,"numbers":[],"value":6},{"r":5,"c":2,"value":7,"numbers":[],"fixed":true},{"r":5,"c":3,"value":9,"numbers":[],"fixed":true},{"r":5,"c":4,"numbers":[],"value":1},{"r":5,"c":5,"numbers":[],"value":4},{"r":5,"c":6,"value":8,"numbers":[],"fixed":true},{"r":5,"c":7,"value":5,"numbers":[],"fixed":true},{"r":5,"c":8,"value":2,"numbers":[],"fixed":true},{"r":5,"c":9,"value":3,"numbers":[],"fixed":true},{"r":6,"c":1,"value":5,"numbers":[],"fixed":true},{"r":6,"c":2,"numbers":[],"value":4},{"r":6,"c":3,"value":1,"numbers":[],"fixed":true},{"r":6,"c":4,"value":2,"numbers":[],"fixed":true},{"r":6,"c":5,"value":6,"numbers":[],"fixed":true},{"r":6,"c":6,"numbers":[],"value":3},{"r":6,"c":7,"value":7,"numbers":[],"fixed":true},{"r":6,"c":8,"numbers":[],"value":9},{"r":6,"c":9,"value":8,"numbers":[],"fixed":true},{"r":7,"c":1,"numbers":[],"value":7},{"r":7,"c":2,"value":2,"numbers":[],"fixed":true},{"r":7,"c":3,"value":4,"numbers":[],"fixed":true},{"r":7,"c":4,"numbers":[],"value":6},{"r":7,"c":5,"numbers":[],"value":8,"fixed":true},{"r":7,"c":6,"numbers":[],"value":9},{"r":7,"c":7,"numbers":[],"value":1,"fixed":true},{"r":7,"c":8,"numbers":[],"value":3,"fixed":true},{"r":7,"c":9,"numbers":[],"value":5},{"r":8,"c":1,"numbers":[],"value":9,"fixed":true},{"r":8,"c":2,"numbers":[],"value":1},{"r":8,"c":3,"numbers":[5,6]},{"r":8,"c":4,"numbers":[],"value":7,"fixed":true},{"r":8,"c":5,"numbers":[],"value":3,"fixed":true},{"r":8,"c":6,"numbers":[4,5]},{"r":8,"c":7,"numbers":[4,6]},{"r":8,"c":8,"numbers":[],"value":8},{"r":8,"c":9,"numbers":[],"value":2,"fixed":true},{"r":9,"c":1,"numbers":[],"value":8,"fixed":true},{"r":9,"c":2,"numbers":[],"value":3},{"r":9,"c":3,"numbers":[5,6]},{"r":9,"c":4,"numbers":[4,5]},{"r":9,"c":5,"numbers":[],"value":2},{"r":9,"c":6,"numbers":[],"value":1,"fixed":true},{"r":9,"c":7,"numbers":[],"value":9,"fixed":true},{"r":9,"c":8,"numbers":[4,6]},{"r":9,"c":9,"numbers":[],"value":7,"fixed":true}]';
