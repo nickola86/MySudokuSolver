@@ -1,0 +1,58 @@
+.sudoku-cell {
+  display: inline-block;
+  height: 60px;
+  width: 60px;
+  font-family: "Courier New", Courier, monospace;
+  font-weight: bold;
+  font-size: 40px;
+  border: 1px solid black;
+  padding-top: 10px;
+  box-sizing: border-box;
+}
+
+.cell-container {
+  display: inline-block;
+  position: relative;
+}
+.cell-container .numbers {
+  position: absolute;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 14px;
+}
+
+.cell-container .numbers.n1 {
+  top: 5%;
+  left: 5%;
+}
+.cell-container .numbers.n2 {
+  top: 5%;
+  left: 30%;
+}
+.cell-container .numbers.n3 {
+  top: 5%;
+  left: 55%;
+}
+.cell-container .numbers.n4 {
+  top: 5%;
+  left: 80%;
+}
+.cell-container .numbers.n5 {
+  top: 40%;
+  left: 5%;
+}
+.cell-container .numbers.n6 {
+  top: 40%;
+  left: 80%;
+}
+.cell-container .numbers.n7 {
+  top: 75%;
+  left: 20%;
+}
+.cell-container .numbers.n8 {
+  top: 75%;
+  left: 43%;
+}
+.cell-container .numbers.n9 {
+  top: 75%;
+  left: 66%;
+}

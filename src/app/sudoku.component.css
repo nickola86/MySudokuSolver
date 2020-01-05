@@ -1,0 +1,16 @@
+.schema {
+  border-left: 4px solid black;
+  border-right: 4px solid black;
+  display: inline-block;
+}
+.top-line {
+  border-top: 4px solid black;
+}
+.bottom-line {
+  border-bottom: 4px solid black;
+}
+.right-line {
+  border-right: 4px solid black;
+  height: 60px;
+  display: inline-block;
+}

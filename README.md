@@ -1,2 +1,0 @@
-# MySudokuSolver
-Created with CodeSandbox
