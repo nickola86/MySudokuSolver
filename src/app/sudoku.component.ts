@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, NgZone } from "@angular/core";
 
 @Component({
   selector: "sudoku",
@@ -8,15 +8,19 @@ import { Component, OnInit } from "@angular/core";
 export class Sudoku implements OnInit {
   title = "Sudoku Solver";
   matrix = [];
-  list = [];
   matrixHistory = [];
-  listHistory = [];
+
+  constructor(zone: NgZone){}
 
   cellChange(cell) {
-    console.log("Current Matrix: ", this.matrix);
-    this.matrixHistory.push(JSON.parse(JSON.stringify(this.matrix)));
-    this.listHistory.push(JSON.parse(JSON.stringify(this.list)));
+    this.saveMatrix(cell);
     this.updateNumbers(cell);
+  }
+
+  saveMatrix(cell){
+    let m = JSON.parse(JSON.stringify(this.matrix));
+    m[cell.r-1][cell.c-1].value=undefined;
+    this.matrixHistory.push(m);
   }
 
   updateNumbers(cell) {
@@ -27,15 +31,11 @@ export class Sudoku implements OnInit {
   }
 
   removeValueFromRow(cell) {
-    console.log("cell", cell);
-    console.log("cell.value", cell.value);
-    console.log("cell.r", cell.r);
-    console.log("cell.c", cell.c);
     let v = cell.value;
     let r = cell.r - 1;
     for (let c = 0; c < 9; c++) {
       let numbers = this.matrix[r][c].numbers;
-      numbers = numbers.splice(numbers.indexOf(v), 1);
+      numbers.splice(numbers.indexOf(v), 1);
     }
   }
   removeValueFromCol(cell) {
@@ -50,9 +50,7 @@ export class Sudoku implements OnInit {
 
   undo() {
     var m = this.matrixHistory.pop();
-    var l = this.listHistory.pop();
     this.matrix = m;
-    this.list = l;
   }
 
   ngOnInit() {
@@ -70,10 +68,8 @@ export class Sudoku implements OnInit {
           numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9]
         };
         this.matrix[i][j] = cell;
-        this.list.push(cell);
       }
     }
     this.matrixHistory.push(JSON.parse(JSON.stringify(this.matrix)));
-    this.listHistory.push(JSON.parse(JSON.stringify(this.list)));
   }
 }

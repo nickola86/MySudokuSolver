@@ -11,10 +11,13 @@ export class Cell implements OnInit {
   @Output() cellChange = new EventEmitter();
 
   toNumber() {
-    this.cell.value = +this.cell.value;
+    if(this.cell.value && this.cell.value!==0 && this.cell.value!=='' && !isNaN(+this.cell.value)){
+      this.cell.value = +this.cell.value;
+      this.cellChange.emit(this.cell);
+    }else{
+      this.cell.value = undefined;
+    }
   }
-
-  emitChange() {
-    this.cellChange.emit(this.cell);
-  }
+  
+  ngOnInit(){ }
 }

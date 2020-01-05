@@ -1,12 +1,12 @@
 <div class="cell-container">
   <span class="sudoku-cell">
-    <input
+    <input *ngIf="!cell.value"
       type="text"
       class="value"
       [(ngModel)]="cell.value"
       (ngModelChange)="toNumber()"
-      (keypress)="emitChange($event)"
     />
+    <input *ngIf="!!cell.value" class="value" value="{{cell.value}}" disabled="disabled"/>
   </span>
   <span class="numbers n{{n}}" *ngFor="let n of cell.numbers">{{n}}</span>
 </div>
