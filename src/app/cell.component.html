@@ -1,12 +1,12 @@
 <div class="cell-container">
-  <span class="sudoku-cell">
+  <span class="sudoku-cell" [ngClass]="{'fixed': !!cell.fixed, 'filled' : !!cell.value }">
     <input *ngIf="!cell.value"
       type="text"
       class="value"
       [(ngModel)]="cell.value"
       (ngModelChange)="toNumber()"
     />
-    <input *ngIf="!!cell.value" class="value" value="{{cell.value}}" disabled="disabled"/>
+    <input *ngIf="!!cell.value" class="value" value="{{cell.value}}" readonly/>
   </span>
   <span class="numbers n{{n}}" *ngFor="let n of cell.numbers">{{n}}</span>
 </div>

@@ -19,5 +19,5 @@ export class Cell implements OnInit {
     }
   }
   
-  ngOnInit(){ }
+  ngOnInit(){ };
 }

@@ -15,6 +15,20 @@
   width: 100%;
   text-align: center;
 }
+.sudoku-cell.filled{
+  animation: colorchange 1s;
+}
+.sudoku-cell.fixed input{
+  color:#0000aa;
+}
+
+@keyframes colorchange
+{
+  0%   {background: transparent;}
+  50%  {background: yellow;}
+  100% {background: transparent;}
+}
+
 
 .cell-container {
   display: inline-block;
