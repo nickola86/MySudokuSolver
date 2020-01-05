@@ -49,7 +49,7 @@ export class Sudoku implements OnInit {
     try{
       if(sublist.length>0){
         sublist.forEach(e=>{
-          e.value=e.numbers.pop();
+          e.value=e.numbers[0];
           this.cellChange(e);
           if(!options.autoSolve) throw {}; 
         });
@@ -113,8 +113,8 @@ export class Sudoku implements OnInit {
   }
 
   cellChange(cell) {
-    this.setMatrix(cell);
     this.saveMatrix(cell);
+    this.setMatrix(cell);
     this.updateNumbers(cell);
     this.checkSudoku();
   }
@@ -202,8 +202,6 @@ export class Sudoku implements OnInit {
         });
       } 
     }
-
-
   }
 
   undo() {
