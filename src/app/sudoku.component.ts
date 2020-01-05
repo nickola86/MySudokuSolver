@@ -1,6 +1,6 @@
 import { Component, OnInit, NgZone } from "@angular/core";
 
-const autoSolve = true;
+const options = {autoSolve:true};
 
 @Component({
   selector: "sudoku",
@@ -11,6 +11,7 @@ export class Sudoku implements OnInit {
   title = "Sudoku Solver";
   matrix = [];
   matrixHistory = [];
+  solved=false;
 
   constructor(zone: NgZone){}
 
@@ -20,24 +21,43 @@ export class Sudoku implements OnInit {
     sublist.forEach(e=>e.fixed=true);
   }
 
+  checkSudoku(){
+    if(this.solved) return true;
+    let sum = 9*9*10/2;
+    let list = this.matrixToList();
+    list = list.filter(e=>!!e.value).map(e=>e.value);
+    let checkSum = list && list.length > 0 ? list.reduce((a,b)=>a+b) : 0;
+
+    this.checkRows();
+    this.checkCols();
+    this.checkBlocks();
+
+  }
+
+  solveByStep(){
+    options.autoSolve = false;
+    this.solve();
+  }
+  autosolve(){
+    options.autoSolve = true;
+    this.solve();
+  }
+
   solve(){
     let list = this.matrixToList();
     let sublist = list.filter(e=>e.numbers.length==1);
-    if(sublist.length>0){
-      console.log("Solve 1, list: ", list);
-      console.log(sublist);
-      sublist.forEach(e=>{
-        e.value=e.numbers.pop();
-        this.cellChange(e);
-      });
-      if(autoSolve) this.solve();
-    }else{
-      list = list.filter(e=> e.numbers.length>0);
-      list = list.sort( (a,b) => a.numbers.length - b.numbers.length);
-      console.log("Solve 2, list: ", list);
-      try{
+    try{
+      if(sublist.length>0){
+        sublist.forEach(e=>{
+          e.value=e.numbers.pop();
+          this.cellChange(e);
+          if(!options.autoSolve) throw {}; 
+        });
+        if(options.autoSolve) this.solve();
+      }else{
+        list = list.filter(e=> e.numbers.length>0);
+        list = list.sort( (a,b) => a.numbers.length - b.numbers.length);
         list.forEach(e => {
-          console.log("Foreach: ", e);
           e.numbers.forEach(n => {
             let r = 0;
             let c = 0;
@@ -73,16 +93,15 @@ export class Sudoku implements OnInit {
             if(!exist){
               e.value=n;
               this.cellChange(e);
-              if(autoSolve) this.solve();
+              if(options.autoSolve) this.solve();
               //Condizione di stop del ForEach
               throw {};
             }
 
           });
         });
-      }catch(e){}
-    }
-
+      }
+    }catch(e){}
   }
 
   matrixToList(){
@@ -97,6 +116,7 @@ export class Sudoku implements OnInit {
     this.setMatrix(cell);
     this.saveMatrix(cell);
     this.updateNumbers(cell);
+    this.checkSudoku();
   }
 
   saveMatrix(cell){
@@ -149,6 +169,43 @@ export class Sudoku implements OnInit {
     if(numbers.indexOf(v)>=0) numbers.splice(numbers.indexOf(v), 1);
   }
 
+  checkRows() {
+    let list = this.matrixToList();
+    for(let r=1; r<=9; r++){
+      let sublist = list.filter(e=>e.r===r && !!e.value);
+      sublist.forEach(n=>{
+        if(sublist.filter(e=>e.value===n.value).length>1)
+          n.wrongNumber=true;
+      });
+    }
+  }
+  checkCols() {
+    let list = this.matrixToList();
+    for(let c=1; c<=9; c++){
+      let sublist = list.filter(e=>e.c===c && !!e.value);
+      sublist.forEach(n=>{
+        if(sublist.filter(e=>e.value===n.value).length>1)
+          n.wrongNumber=true;
+      });
+    }
+  }
+  checkBlocks() {
+    let list = this.matrixToList();
+    for(let br=0; br<=2; br++){
+      for(let bc=0; bc<=2; bc++){
+        let minR=br*3+1,maxR=br*3+3,minC=bc*3+1,maxC=bc*3+3;
+        let sublist = list.filter(e=>e.r>=minR && e.r<=maxR && !!e.value);
+        sublist = sublist.filter(e=>e.c>=minC && e.c<=maxC && !!e.value);
+        sublist.forEach(n=>{
+          if(sublist.filter(e=>e.value===n.value).length>1)
+            n.wrongNumber=true;
+        });
+      } 
+    }
+
+
+  }
+
   undo() {
     var m = this.matrixHistory.pop();
     this.matrix = m;
@@ -162,6 +219,7 @@ export class Sudoku implements OnInit {
 
 
   initEmptyMatrix() {
+    this.solved=false;
     for (let i = 0; i < 9; i++) {
       this.matrix[i] = [];
       for (let j = 0; j < 9; j++) {
@@ -212,4 +270,9 @@ export class Sudoku implements OnInit {
     this.cellChange({r:9,c:1,value:3,fixed:true});
     this.cellChange({r:9,c:2,value:1,fixed:true});
   }
+  mockSchema2(){
+    let mockString = '[{"r":1,"c":1,"numbers":[2,4]},{"r":1,"c":2,"value":6,"numbers":[],"fixed":true},{"r":1,"c":3,"numbers":[2,7]},{"r":1,"c":4,"value":3,"numbers":[],"fixed":true},{"r":1,"c":5,"numbers":[],"value":9},{"r":1,"c":6,"numbers":[4,5]},{"r":1,"c":7,"value":8,"numbers":[],"fixed":true},{"r":1,"c":8,"numbers":[4,5,7]},{"r":1,"c":9,"value":1,"numbers":[],"fixed":true},{"r":2,"c":1,"numbers":[],"value":1},{"r":2,"c":2,"numbers":[],"value":9},{"r":2,"c":3,"numbers":[],"value":8},{"r":2,"c":4,"numbers":[4,5]},{"r":2,"c":5,"value":7,"numbers":[],"fixed":true},{"r":2,"c":6,"value":2,"numbers":[],"fixed":true},{"r":2,"c":7,"value":3,"numbers":[],"fixed":true},{"r":2,"c":8,"numbers":[4,5,6]},{"r":2,"c":9,"numbers":[4,6]},{"r":3,"c":1,"numbers":[3,4]},{"r":3,"c":2,"value":5,"numbers":[],"fixed":true},{"r":3,"c":3,"numbers":[3,7]},{"r":3,"c":4,"value":8,"numbers":[],"fixed":true},{"r":3,"c":5,"value":1,"numbers":[],"fixed":true},{"r":3,"c":6,"numbers":[],"value":6},{"r":3,"c":7,"numbers":[],"value":2},{"r":3,"c":8,"numbers":[4,7]},{"r":3,"c":9,"value":9,"numbers":[],"fixed":true},{"r":4,"c":1,"numbers":[2,3]},{"r":4,"c":2,"value":8,"numbers":[],"fixed":true},{"r":4,"c":3,"numbers":[2,3]},{"r":4,"c":4,"value":9,"numbers":[],"fixed":true},{"r":4,"c":5,"value":5,"numbers":[],"fixed":true},{"r":4,"c":6,"numbers":[],"value":7},{"r":4,"c":7,"numbers":[4,6]},{"r":4,"c":8,"numbers":[],"value":1},{"r":4,"c":9,"numbers":[4,6]},{"r":5,"c":1,"numbers":[],"value":6},{"r":5,"c":2,"value":7,"numbers":[],"fixed":true},{"r":5,"c":3,"value":9,"numbers":[],"fixed":true},{"r":5,"c":4,"numbers":[],"value":1},{"r":5,"c":5,"numbers":[],"value":4},{"r":5,"c":6,"value":8,"numbers":[],"fixed":true},{"r":5,"c":7,"value":5,"numbers":[],"fixed":true},{"r":5,"c":8,"value":2,"numbers":[],"fixed":true},{"r":5,"c":9,"value":3,"numbers":[],"fixed":true},{"r":6,"c":1,"value":5,"numbers":[],"fixed":true},{"r":6,"c":2,"numbers":[],"value":4},{"r":6,"c":3,"value":1,"numbers":[],"fixed":true},{"r":6,"c":4,"value":2,"numbers":[],"fixed":true},{"r":6,"c":5,"value":6,"numbers":[],"fixed":true},{"r":6,"c":6,"numbers":[],"value":3},{"r":6,"c":7,"value":7,"numbers":[],"fixed":true},{"r":6,"c":8,"numbers":[],"value":9},{"r":6,"c":9,"value":8,"numbers":[],"fixed":true},{"r":7,"c":1,"numbers":[],"value":7},{"r":7,"c":2,"value":2,"numbers":[],"fixed":true},{"r":7,"c":3,"value":4,"numbers":[],"fixed":true},{"r":7,"c":4,"numbers":[],"value":6},{"r":7,"c":5,"numbers":[],"value":8,"fixed":true},{"r":7,"c":6,"numbers":[],"value":9},{"r":7,"c":7,"numbers":[],"value":1,"fixed":true},{"r":7,"c":8,"numbers":[],"value":3,"fixed":true},{"r":7,"c":9,"numbers":[],"value":5},{"r":8,"c":1,"numbers":[],"value":9,"fixed":true},{"r":8,"c":2,"numbers":[],"value":1},{"r":8,"c":3,"numbers":[5,6]},{"r":8,"c":4,"numbers":[],"value":7,"fixed":true},{"r":8,"c":5,"numbers":[],"value":3,"fixed":true},{"r":8,"c":6,"numbers":[4,5]},{"r":8,"c":7,"numbers":[4,6]},{"r":8,"c":8,"numbers":[],"value":8},{"r":8,"c":9,"numbers":[],"value":2,"fixed":true},{"r":9,"c":1,"numbers":[],"value":8,"fixed":true},{"r":9,"c":2,"numbers":[],"value":3},{"r":9,"c":3,"numbers":[5,6]},{"r":9,"c":4,"numbers":[4,5]},{"r":9,"c":5,"numbers":[],"value":2},{"r":9,"c":6,"numbers":[],"value":1,"fixed":true},{"r":9,"c":7,"numbers":[],"value":9,"fixed":true},{"r":9,"c":8,"numbers":[4,6]},{"r":9,"c":9,"numbers":[],"value":7,"fixed":true}]';
+    this.matrix = JSON.parse(mockString); 
+  }
+
 }

@@ -15,18 +15,31 @@
   width: 100%;
   text-align: center;
 }
-.sudoku-cell.filled{
-  animation: colorchange 1s;
+.sudoku-cell.filled:not(.wrong-number){
+  animation: filled 1s;
 }
 .sudoku-cell.fixed input{
   color:#0000aa;
 }
+.sudoku-cell.wrong-number{
+  animation: wrong-number 1s;
+  background-color:#aa0000;
+}
+.sudoku-cell.wrong-number input{
+  color: white;
+  
+}
 
-@keyframes colorchange
+@keyframes filled
 {
   0%   {background: transparent;}
   50%  {background: yellow;}
   100% {background: transparent;}
+}
+@keyframes wrong-number
+{
+  0%   {background: transparent;}
+  20%  {background: #aa0000;}
 }
 
 

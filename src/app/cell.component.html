@@ -1,5 +1,5 @@
 <div class="cell-container">
-  <span class="sudoku-cell" [ngClass]="{'fixed': !!cell.fixed, 'filled' : !!cell.value }">
+  <span class="sudoku-cell" [ngClass]="{'wrong-number':!!cell.wrongNumber, 'fixed': !!cell.fixed, 'filled' : !!cell.value }">
     <input *ngIf="!cell.value"
       type="text"
       class="value"
