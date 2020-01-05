@@ -2,12 +2,18 @@
   display: inline-block;
   height: 60px;
   width: 60px;
+  border: 1px solid black;
+  padding-top: 8px;
+  box-sizing: border-box;
+}
+.sudoku-cell .value {
   font-family: "Courier New", Courier, monospace;
   font-weight: bold;
   font-size: 40px;
-  border: 1px solid black;
-  padding-top: 10px;
-  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  text-align: center;
 }
 
 .cell-container {
