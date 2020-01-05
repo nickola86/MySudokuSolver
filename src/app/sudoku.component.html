@@ -1,3 +1,5 @@
+<button (click)="undo()" *ngIf="matrixHistory.length>1">Undo</button>
+<br />
 <div
   class="schema"
   [ngClass]="{
@@ -11,6 +13,7 @@
       'right-line':c==3 || c==6
     }"
     *ngFor="let c of [1,2,3,4,5,6,7,8,9]"
-    [cell]="list[(r*c)-1]"
+    [cell]="list[(((r-1)*9)+c)-1]"
+    (cellChange)="cellChange($event)"
   ></cell>
 </div>

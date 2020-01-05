@@ -1,6 +1,12 @@
 <div class="cell-container">
   <span class="sudoku-cell">
-    <input type="text" class="value" value="{{cell.value}}" />
+    <input
+      type="text"
+      class="value"
+      [(ngModel)]="cell.value"
+      (ngModelChange)="toNumber()"
+      (keypress)="emitChange($event)"
+    />
   </span>
   <span class="numbers n{{n}}" *ngFor="let n of cell.numbers">{{n}}</span>
 </div>

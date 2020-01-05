@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from "@angular/core";
+import { Component, OnInit, Input, EventEmitter, Output } from "@angular/core";
 
 @Component({
   selector: "cell",
@@ -8,5 +8,13 @@ import { Component, OnInit, Input } from "@angular/core";
 export class Cell implements OnInit {
   @Input() cell;
 
-  ngOnInit() {}
+  @Output() cellChange = new EventEmitter();
+
+  toNumber() {
+    this.cell.value = +this.cell.value;
+  }
+
+  emitChange() {
+    this.cellChange.emit(this.cell);
+  }
 }
