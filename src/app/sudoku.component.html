@@ -10,6 +10,10 @@
 &nbsp;&nbsp;
 <button (click)="initEmptyMatrix()">Clean</button>
 &nbsp;&nbsp;
+<button *ngIf="!load" (click)="load=!load">Load</button>
+<button *ngIf="load" (click)="import() || load=!load">Import</button>
+<br /><br />
+<textarea *ngIf="load" class="import" [(ngModel)]="importData"></textarea>
 <br /><br />
 <div *ngFor="let r of [1,2,3,4,5,6,7,8,9]">
 <div
@@ -29,15 +33,7 @@
   ></cell>
 </div>
 </div>
-<textarea class="import" [(ngModel)]="importData">
-  268  
-  413      
-     5     
-       46 8
-     9     
-   67   5  
-    9      
-     8   3 
-  2  1  789
-</textarea>
-<button (click)="import()">Import</button>
+<br /><br />
+<button (click)="export()">Export</button>
+<br /><br />
+<textarea class="export" [(ngModel)]="exportData"></textarea>

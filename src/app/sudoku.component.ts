@@ -12,7 +12,10 @@ export class Sudoku implements OnInit {
   matrix = [];
   matrixHistory = [];
   solved=false;
-  importData = "";
+  importData = "000039700\n000708250\n008005036\n010000698\n800000002\n569000070\n370800900\n025304000\n006250000";
+  exportData="";
+  cleanupEffective=false;
+  loopDetection=false;
 
   constructor(zone: NgZone){}
 
@@ -20,6 +23,13 @@ export class Sudoku implements OnInit {
     let list = this.matrixToList();
     let sublist = list.filter(e=>e.numbers.length==0);
     sublist.forEach(e=>e.fixed=true);
+  }
+  export(){
+    this.exportData=this.matrix.map(r=>{
+      return r.map(c=>{
+        return c.value || 0;
+      }).join('');
+    }).join('\n');
   }
 
   checkSudoku(){
@@ -40,6 +50,14 @@ export class Sudoku implements OnInit {
     
   }
 
+  cellChange(cell) {
+    this.saveMatrix(cell);
+    this.setMatrix(cell);
+    this.updateNumbers(cell);
+    this.checkSudoku();
+  }
+
+
   solveByStep(){
     options.autoSolve = false;
     this.solve();
@@ -50,9 +68,11 @@ export class Sudoku implements OnInit {
   }
 
   solve(){
+    //if(this.loopDetection) return;
     let list = this.matrixToList();
     let sublist = list.filter(e=>e.numbers.length==1);
     try{
+      //Cerco le caselle con una sola scelta possibile e le assegno in modo ricorsivo
       if(sublist.length>0){
         sublist.forEach(e=>{
           e.value=e.numbers[0];
@@ -61,74 +81,73 @@ export class Sudoku implements OnInit {
         });
         if(options.autoSolve) this.solve();
       }else{
-        list = list.filter(e=> e.numbers.length> 0 );
-        list = list.sort( (a,b) => a.numbers.length - b.numbers.length);
-        list.forEach(e => {
-          e.numbers.forEach(n => {
-            let r = 0;
-            let c = 0;
-            let exist = false;
 
-            //Cerco sulla stessa riga
-            r = e.r-1;
-            for(c = 0; c<9 && !exist; c++){
-              if(this.matrix[r][c].numbers.length > 0){
-                exist = this.matrix[r][c].numbers.indexOf(n) >= 0;
-              }
-            }
+        //Non ci sono caselle assegnabili in modo semplice e ricorsivo
+        //Faccio un giro di pulizia della matrice che magari saltano fuori
+        let cleaned = false;
+        cleaned = this.rowCleanup() || cleaned;
+        cleaned = this.colCleanup() || cleaned;
+        cleaned = this.blockCleanup() || cleaned;
+        
+        if(options.autoSolve) this.solve();
 
-            //Cerco sulla stessa colonna
-            c = e.c-1;
-            for(r = 0; r<9 && !exist; r++){
-              if(this.matrix[r][c].numbers.length > 0){
-                exist = this.matrix[r][c].numbers.indexOf(n) >= 0;
-              }
-            }
-
-            //Cerco nello stesso blocco
-            let br = Math.floor((e.r-1)/3);
-            let bc = Math.floor((e.c-1)/3);
-            for(r=0; r<=2;r++){
-              for(c=0; c<=2; c++){
-                if(this.matrix[br*3+r][bc*3+c].numbers.length > 0){
-                  exist = this.matrix[br*3+r][bc*3+c].numbers.indexOf(n) >= 0;
-                }
-              }
-            }
-            
-            if(!exist){
-              let lista = this.matrixToList();
-              //Seleziono eventuali celle della stessa riga con gli stessi numbers residui
-              let sublistRow = lista.filter(_e=> _e.r===e.r && this.isEqual(_e.numbers,e.numbers));
-              let emptyInRow = lista.filter(_e=> _e.r===e.r && !_e.value);
-              //Seleziono eventuali elementi della stessa colonna con gli stessi numbers residui
-              let sublistCol = lista.filter(_e=>_e.c===e.c && this.isEqual(_e.numbers,e.numbers));
-              let emptyInCol = lista.filter(_e=> _e.c===e.c && !_e.value);
-              //Se ci sono:
-              if(sublistRow.length>1 && sublistRow.length === emptyInRow.length || sublistCol.length>1 && sublistCol.length === emptyInCol.length){
-                //Scrematura necessaria!
-                this.pruning();
-                //this.solve();
-              }
-              else{
-                e.value=n;
-                this.cellChange(e);
-                if(options.autoSolve) this.solve();
-                if(this.checkSudoku()){
-                  //Condizione di stop del ForEach
-                  throw {};  
-                }else{
-                  //Se la mossa corrente ha invalidato il sudoku annullala
-                  this.undo();
-                }
-              }
-            }
-
-          });
-        });
       }
     }catch(e){}
   }
+
+  rowCleanup(){
+    let cleaned = false;
+    let list = this.matrixToList();
+    for(let r=1; r<=9; r++){
+      let sublist = list.filter(e=>e.r===r && !e.value);
+      cleaned = this.sublistCleanup(sublist);
+    }
+    return cleaned;
+  }
+  colCleanup(){
+    let cleaned = false;
+    let list = this.matrixToList();
+    for(let c=1; c<=9; c++){
+      let sublist = list.filter(e=>e.c===c && !e.value);
+      cleaned = this.sublistCleanup(sublist);
+    }
+    return cleaned;
+  }
+  blockCleanup(){
+    let cleaned = false;
+    let list = this.matrixToList();
+    for(let br=0; br<=2; br++){
+      for(let bc=0; bc<=2; bc++){
+        let minR=br*3+1,maxR=br*3+3,minC=bc*3+1,maxC=bc*3+3;
+        let sublist = list.filter(e=>e.r>=minR && e.r<=maxR && !e.value);
+        sublist = sublist.filter(e=>e.c>=minC && e.c<=maxC && !e.value);
+        cleaned = this.sublistCleanup(sublist);
+      } 
+    }
+    return cleaned;
+  }
+  sublistCleanup(sublist){
+    let cleaned = false;
+    let candidati=[];
+    //Per ogni cella sulla riga
+    sublist.forEach(e=>{
+      //Per ogni candidato nella cella
+      e.numbers.forEach(n=>{
+        //Aggiungo la cella "e" alla lista di candidati per il numero "n"
+        candidati[n] = candidati[n] || [];
+        candidati[n].push({number:n,candidato:e});
+      });
+    });
+    //Filtro dai candidati solo i candidati che compaiono in una sola cella della riga (sempre che ci siano)
+    candidati = candidati.filter(e=>e.length===1);
+    candidati.forEach(e=>{ //Se ho culo ne trovo uno, ma metto cmq un forEach perchè fa figo...
+      e[0].candidato.value=e[0].number;
+      this.cellChange(e[0].candidato);
+      cleaned = true;
+    });
+    return cleaned;
+  }
+
 
   matrixToList(){
     let list = [];
@@ -138,17 +157,16 @@ export class Sudoku implements OnInit {
     return list;
   }
 
-  cellChange(cell) {
-    this.saveMatrix(cell);
-    this.setMatrix(cell);
-    this.updateNumbers(cell);
-    this.checkSudoku();
-  }
-
   saveMatrix(cell){
+    this.loopDetection=false;
+    //Se gli ultimi due schemi salvati in history coincidono sono in un potenziale loop!
     let m = JSON.parse(JSON.stringify(this.matrix));
     m[cell.r-1][cell.c-1].value=undefined;
-    this.matrixHistory.push(m);
+    let m_last_1 = this.matrixHistory[this.matrixHistory.length-1];
+    let m_last_2 = this.matrixHistory[this.matrixHistory.length-2];
+    if(false) this.loopDetection=true;
+    //Altrimenti è tutto ok, non sono in un loop, e salvo lo stato del sudoku
+    else this.matrixHistory.push(m);
   }
   setMatrix(cell){
     if(cell.value){
@@ -265,71 +283,6 @@ export class Sudoku implements OnInit {
     }
   }
 
-  pruning(){
-    let pruned=false;
-    let lista = this.matrixToList();
-    lista.filter(e=>e.numbers.length>0).forEach(e=>{
-      //Seleziono eventuali elementi della stessa riga con gli stessi numbers residui
-      let sublistRow = lista.filter(_e=> _e.r===e.r && this.isEqual(_e.numbers,e.numbers));
-      let emptyInRow = lista.filter(_e=> _e.r===e.r && !_e.value);
-      //Seleziono eventuali elementi della stessa colonna con gli stessi numbers residui
-      let sublistCol = lista.filter(_e=>_e.c===e.c && this.isEqual(_e.numbers,e.numbers));
-      let emptyInCol = lista.filter(_e=> _e.c===e.c && !_e.value);
-      //Se ci sono:
-      console.log("sublistRow: ",sublistRow);
-      console.log("sublistCol: ",sublistCol);
-      console.log("e",e);
-      if(sublistRow.length>1 && sublistRow.length === emptyInRow.length){
-        //Posso scartare quei numbers dalle altre celle nel blocco corrente che NON sono sulla riga corrente
-        let minR=Math.floor((e.r-1)/3)*3;
-        let maxR=minR+2;
-        let minC=Math.floor((e.c-1)/3)*3;
-        let maxC=minC+2;
-        console.log("minR",minR);
-        console.log("maxR",maxR);
-        console.log("minC",minC);
-        console.log("maxC",maxC);
-        for(let r=minR;r<=maxR;r++){
-          for(let c=minC;c<=maxC;c++){
-            let numbers = this.matrix[r][c].numbers;
-            console.log("this.matrix["+r+"]["+c+"]",this.matrix[r][c]);
-            if(r != e.r-1 && numbers.length>0 && !this.isEqual(numbers,e.numbers) ){
-              e.numbers.forEach(n=>{
-                if(numbers.indexOf(n)>=0) {
-                  numbers.splice(numbers.indexOf(n), 1);
-                  pruned=true;
-                }
-              });
-            }
-          }
-        }
-      }
-      //Se ci sono:
-      if(sublistCol.length>1 && sublistCol.length === emptyInCol.length){
-        //Posso scartare quei numbers dalle altre celle nel blocco corrente che NON sono sulla colonna corrente
-        let minR=Math.floor((e.r-1)/3)*3;
-        let maxR=minR+2;
-        let minC=Math.floor((e.c-1)/3)*3;
-        let maxC=minC+2;
-        for(let r=minR;r<=maxR;r++){
-          for(let c=minC;c<=maxC;c++){
-            let numbers = this.matrix[r][c].numbers;
-            if(c != e.c-1 && numbers.length>0 && !this.isEqual(numbers,e.numbers) ){
-              e.numbers.forEach(n=>{
-                if(numbers.indexOf(n)>=0){
-                  numbers.splice(numbers.indexOf(n), 1);
-                  pruned=true;
-                }
-              });
-            }
-          }
-        }
-      }
-    });
-    //Se hai potato, prova ancora!
-    if(pruned) this.pruning();
-  }
-
 
   isEqual(a,b){
     return JSON.stringify(a)===JSON.stringify(b)
@@ -406,7 +359,7 @@ export class Sudoku implements OnInit {
     lines.forEach((line,r)=>{
       line.split('').forEach((char,c)=>{
         let v = +char;
-        this.cellChange({r:r+1,c:c+1,value:v,fixed:true});
+        this.cellChange({r:r+1,c:c+1,value:v,fixed:v>0});
       });
     })
   }
